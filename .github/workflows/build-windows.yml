@@ -1,0 +1,44 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [main, "cursor/**"]
+    paths-ignore: ["**.md"]
+  pull_request:
+    paths-ignore: ["**.md"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[build]
+
+      - name: Run offline tests
+        run: |
+          pip install pytest
+          pytest -m "not live"
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+      - name: Build executable
+        run: pyinstaller --noconfirm --clean packaging/harvester_gui.spec
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ResourceStudyHarvester-windows
+          path: dist/ResourceStudyHarvester.exe
+          if-no-files-found: error
