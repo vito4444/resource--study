@@ -36,18 +36,44 @@ a = Analysis(
 
 pyz = PYZ(a.pure)
 
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.datas,
-    [],
-    name="ResourceStudyHarvester",
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=False,
-    console=False,       # GUI app: no console window
-    disable_windowed_traceback=False,
-    icon=icon,
-)
+# RSH_ONEDIR=1 → one-folder build (faster start, fewer AV false positives);
+# default → single-file executable.
+onedir = os.environ.get("RSH_ONEDIR") == "1"
+
+if onedir:
+    exe = EXE(
+        pyz,
+        a.scripts,
+        [],
+        exclude_binaries=True,
+        name="ResourceStudyHarvester",
+        debug=False,
+        strip=False,
+        upx=False,
+        console=False,
+        icon=icon,
+    )
+    coll = COLLECT(
+        exe,
+        a.binaries,
+        a.datas,
+        strip=False,
+        upx=False,
+        name="ResourceStudyHarvester",
+    )
+else:
+    exe = EXE(
+        pyz,
+        a.scripts,
+        a.binaries,
+        a.datas,
+        [],
+        name="ResourceStudyHarvester",
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=False,
+        console=False,       # GUI app: no console window
+        disable_windowed_traceback=False,
+        icon=icon,
+    )

@@ -11,6 +11,10 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [onefile, onedir]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,18 +31,30 @@ jobs:
           pip install .[build]
 
       - name: Run offline tests
+        if: matrix.mode == 'onefile'
         run: |
           pip install pytest
           pytest -m "not live"
         env:
           QT_QPA_PLATFORM: offscreen
 
-      - name: Build executable
+      - name: Build (${{ matrix.mode }})
         run: pyinstaller --noconfirm --clean packaging/harvester_gui.spec
+        env:
+          RSH_ONEDIR: ${{ matrix.mode == 'onedir' && '1' || '' }}
 
-      - name: Upload EXE artifact
+      - name: Upload single-file EXE
+        if: matrix.mode == 'onefile'
         uses: actions/upload-artifact@v4
         with:
-          name: ResourceStudyHarvester-windows
+          name: ResourceStudyHarvester-windows-onefile
           path: dist/ResourceStudyHarvester.exe
+          if-no-files-found: error
+
+      - name: Upload one-folder build
+        if: matrix.mode == 'onedir'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ResourceStudyHarvester-windows-onedir
+          path: dist/ResourceStudyHarvester/
           if-no-files-found: error
