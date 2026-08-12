@@ -46,6 +46,36 @@ files into a clean, classified directory tree, with a resumable catalog.
 
 Run `harvester list-sources` to see this list from the installed package.
 
+## Two ways to use it
+
+- **Desktop app (GUI)** — a clean PySide6 window with source toggles, live
+  progress, a searchable library view, and a log. Best if you want a Windows
+  `.exe`. See [Desktop app](#desktop-app-gui) and [Building a Windows .exe](#building-a-windows-exe).
+- **Command line** — scriptable, headless, ideal for large/automated runs. See
+  [Quick start](#quick-start) and the [CLI reference](#cli-reference).
+
+Both share the same engine, connectors, catalog and on-disk layout.
+
+## Desktop app (GUI)
+
+Run from source:
+
+```bash
+pip install -e ".[gui]"     # installs PySide6
+harvester-gui               # or: python gui_main.py
+```
+
+The window has four tabs:
+
+- **Harvest** — set the output folder, contact email, and mode (download files vs
+  metadata only); tick the sources you want and set a per-source limit
+  (`0` = harvest everything from that source); then **Start**, **Dry run**, or
+  **Stop**. A progress bar and live counts show what's happening.
+- **Library** — a searchable, sortable table of harvested items (populated live,
+  and reloadable from the on-disk catalog). Double-click a row to open the file.
+- **Log** — the run log.
+- **About** — the source list and the legal-scope notes.
+
 ## Install
 
 Requires Python 3.9+.
@@ -169,13 +199,57 @@ decorate the class with `@register`. Import it in
 `src/harvester/connectors/__init__.py`. It then works everywhere, including the
 config and CLI.
 
+## Building a Windows .exe
+
+PyInstaller does **not** cross-compile, so a Windows executable must be built on
+Windows. There are two supported paths:
+
+### Option A — GitHub Actions (recommended, no local Windows needed)
+
+`.github/workflows/build-windows.yml` builds the app on a `windows-latest`
+runner and uploads the result. On every push (and via **Actions → Build Windows
+EXE → Run workflow**), download the **`ResourceStudyHarvester-windows`** artifact
+— it contains `ResourceStudyHarvester.exe`.
+
+### Option B — build locally on Windows
+
+From the repo root on a Windows machine with Python 3.9+ installed:
+
+```bat
+packaging\build_windows.bat
+```
+
+or manually:
+
+```bat
+python -m pip install .[build]
+pyinstaller --noconfirm --clean packaging\harvester_gui.spec
+```
+
+The single-file executable is written to `dist\ResourceStudyHarvester.exe`. It
+bundles Python, Qt and all dependencies, so it runs on a clean Windows machine
+with no Python installed.
+
+Notes:
+
+- The build is a single `--onefile` executable (~70 MB, mostly Qt). For faster
+  startup you can switch the spec to a one-folder build.
+- Windows SmartScreen / antivirus may warn about an unsigned one-file executable;
+  this is a known PyInstaller trade-off. Code-signing, or a one-folder build,
+  reduces false positives.
+- The same spec produces a native binary on macOS/Linux if you want one.
+
 ## Testing
 
 ```bash
-pip install -e ".[dev]"
-pytest -m "not live"     # offline unit tests
-pytest -m live           # opt-in tests that hit real endpoints
+pip install -e ".[dev,gui]"
+pytest -m "not live"                       # offline unit + GUI-smoke tests
+QT_QPA_PLATFORM=offscreen pytest -m "not live"   # if no display is available
+pytest -m live                             # opt-in tests that hit real endpoints
 ```
+
+GUI smoke tests are skipped automatically when PySide6 or a usable Qt platform
+is unavailable.
 
 ## Not included, and why
 
