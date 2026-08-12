@@ -30,7 +30,7 @@ harvester-gui = "harvester.gui.app:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-harvester = ["resources/*.yaml"]
+harvester = ["resources/*.yaml", "resources/*.png"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

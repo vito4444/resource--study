@@ -3,11 +3,12 @@ from __future__ import annotations
 
 import json
 import sys
+from importlib import resources
 from pathlib import Path
 from typing import Dict, List, Optional
 
 from PySide6.QtCore import Qt, QThread, QUrl
-from PySide6.QtGui import QAction, QDesktopServices, QFont
+from PySide6.QtGui import QAction, QActionGroup, QDesktopServices, QFont, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -45,6 +46,15 @@ from .worker import HarvestWorker, QtLogBridge
 APP_NAME = "Resource Study Harvester"
 
 
+def app_icon() -> QIcon:
+    """Load the bundled window/app icon (works from source and when frozen)."""
+    try:
+        path = resources.files("harvester.resources").joinpath("icon.png")
+        return QIcon(str(path))
+    except Exception:
+        return QIcon()
+
+
 def _human_size(n: int) -> str:
     size = float(n or 0)
     for unit in ("B", "KB", "MB", "GB", "TB"):
@@ -58,6 +68,7 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle(f"{APP_NAME}  v{__version__}")
+        self.setWindowIcon(app_icon())
         self.resize(1040, 720)
 
         self._base_config: Config = load_default_config()
@@ -324,6 +335,21 @@ class MainWindow(QMainWindow):
         quit_act.triggered.connect(self.close)
         file_menu.addAction(quit_act)
 
+        view_menu = self.menuBar().addMenu("&View")
+        theme_group = QActionGroup(self)
+        self.light_act = QAction("Light theme", self, checkable=True, checked=True)
+        self.dark_act = QAction("Dark theme", self, checkable=True)
+        for act in (self.light_act, self.dark_act):
+            theme_group.addAction(act)
+            view_menu.addAction(act)
+        self.light_act.triggered.connect(lambda: self._set_theme(dark=False))
+        self.dark_act.triggered.connect(lambda: self._set_theme(dark=True))
+
+    def _set_theme(self, dark: bool) -> None:
+        app = QApplication.instance()
+        if app is not None:
+            apply_theme(app, dark=dark)
+
     # ---------------- config assembly ----------------
     def _collect_config(self) -> Config:
         cfg = load_default_config()
@@ -528,6 +554,7 @@ class MainWindow(QMainWindow):
 def main() -> int:
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
+    app.setWindowIcon(app_icon())
     apply_theme(app)
     window = MainWindow()
     window.show()

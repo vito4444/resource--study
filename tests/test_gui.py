@@ -51,6 +51,15 @@ def test_mainwindow_builds_and_collects_config(qapp, tmp_path):
         w.close()
 
 
+def test_app_icon_bundled_and_theme(qapp):
+    from harvester.gui.app import app_icon
+    from harvester.gui.theme import apply_theme
+
+    assert not app_icon().isNull()      # resources/icon.png is bundled & loadable
+    apply_theme(qapp, dark=True)
+    apply_theme(qapp, dark=False)       # both palettes apply without error
+
+
 def test_library_row_from_event(qapp):
     from harvester.gui.app import MainWindow
 
