@@ -17,12 +17,20 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
+gui = ["PySide6>=6.6"]
+build = ["PySide6>=6.6", "pyinstaller>=6.3"]
 
 [project.scripts]
 harvester = "harvester.cli:main"
 
+[project.gui-scripts]
+harvester-gui = "harvester.gui.app:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+harvester = ["resources/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -3,18 +3,15 @@ from __future__ import annotations
 
 import argparse
 import logging
-import shutil
 import sys
 from pathlib import Path
 from typing import List, Optional
 
 from . import __version__, connectors as _connectors  # noqa: F401  (registers connectors)
-from .config import load_config
+from .config import default_config_text, load_config
 from .harvest import Harvester
 from .registry import available
 from .storage import Storage
-
-_EXAMPLE_CONFIG = Path(__file__).resolve().parents[2] / "config.example.yaml"
 
 
 def _setup_logging(verbose: bool) -> None:
@@ -39,7 +36,7 @@ def cmd_init_config(args: argparse.Namespace) -> int:
     if dest.exists() and not args.force:
         print(f"refusing to overwrite existing {dest} (use --force)", file=sys.stderr)
         return 1
-    shutil.copyfile(_EXAMPLE_CONFIG, dest)
+    dest.write_text(default_config_text(), encoding="utf-8")
     print(f"wrote {dest} — edit it, then run: harvester harvest --config {dest}")
     return 0
 

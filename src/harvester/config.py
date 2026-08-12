@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass, field
+from importlib import resources
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -68,17 +69,16 @@ def _build_source(name: str, data: Dict[str, Any], defaults: Dict[str, Any]) -> 
     )
 
 
-def load_config(path: Optional[str | Path] = None, overrides: Optional[Dict[str, Any]] = None) -> Config:
-    """Load a YAML config file merged over defaults, then apply CLI overrides.
+def load_config_from_mapping(
+    loaded: Optional[Dict[str, Any]] = None,
+    overrides: Optional[Dict[str, Any]] = None,
+) -> Config:
+    """Build a :class:`Config` from a parsed mapping merged over defaults.
 
-    ``overrides`` (from CLI flags) win over the file, which wins over defaults.
+    ``overrides`` win over ``loaded``, which wins over the built-in defaults.
     """
     merged: Dict[str, Any] = copy.deepcopy(DEFAULTS)
-    if path:
-        p = Path(path)
-        if not p.exists():
-            raise FileNotFoundError(f"config file not found: {p}")
-        loaded = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    if loaded:
         if not isinstance(loaded, dict):
             raise ValueError("config root must be a mapping")
         for key, value in loaded.items():
@@ -108,3 +108,33 @@ def load_config(path: Optional[str | Path] = None, overrides: Optional[Dict[str,
         sources=sources,
         raw=merged,
     )
+
+
+def _mapping_from_text(text: str) -> Dict[str, Any]:
+    loaded = yaml.safe_load(text) or {}
+    if not isinstance(loaded, dict):
+        raise ValueError("config root must be a mapping")
+    return loaded
+
+
+def load_config(path: Optional[str | Path] = None, overrides: Optional[Dict[str, Any]] = None) -> Config:
+    """Load a YAML config file merged over defaults, then apply overrides."""
+    loaded: Dict[str, Any] = {}
+    if path:
+        p = Path(path)
+        if not p.exists():
+            raise FileNotFoundError(f"config file not found: {p}")
+        loaded = _mapping_from_text(p.read_text(encoding="utf-8"))
+    return load_config_from_mapping(loaded, overrides)
+
+
+def default_config_text() -> str:
+    """Return the packaged starter config as text (works when frozen too)."""
+    return resources.files("harvester.resources").joinpath("default_config.yaml").read_text(
+        encoding="utf-8"
+    )
+
+
+def load_default_config(overrides: Optional[Dict[str, Any]] = None) -> Config:
+    """Load the packaged default config (used by the GUI and `init-config`)."""
+    return load_config_from_mapping(_mapping_from_text(default_config_text()), overrides)
