@@ -1,0 +1,85 @@
+# resource-study-harvester configuration
+#
+# Copy to config.yaml and edit. Every source only harvests LEGALLY open content:
+# open-access papers and public-domain / freely-licensed ebooks. Paywalled
+# content is never fetched.
+#
+# Caps: max_records = 0 means UNLIMITED (harvest everything the source exposes).
+# The built-in defaults are small and safe so a first run finishes quickly;
+# raise them (or set 0) to scale up toward "download everything".
+
+# Contact email is sent in the User-Agent and to APIs that offer a "polite pool"
+# (OpenAlex, Crossref). Use a real address for best throughput and etiquette.
+contact_email: "you@example.com"
+
+output_dir: "data"          # downloads + catalog + state live here (git-ignored)
+download: true              # false = metadata-only harvest (no file downloads)
+overwrite: false            # false = skip already-downloaded items (resume)
+global_max_records: 0       # 0 = unlimited total across all sources
+default_per_source_max: 200 # per-source cap when a source omits max_records
+request_timeout: 60
+retries: 4
+
+sources:
+  # ---- Scholarly papers (open access) ----
+  arxiv:
+    enabled: true
+    max_records: 100
+    categories: []          # [] = all arXiv categories; e.g. [cs.AI, math.AG]
+    download: true          # fetch the free PDF
+    rate_limit_seconds: 3.0 # arXiv requests >= 3s between calls
+
+  openalex:
+    enabled: true
+    max_records: 100
+    filters: {}             # extra OpenAlex filters, e.g. {from_publication_date: "2024-01-01"}
+    only_open_access: true
+    download: true          # fetch PDF only when a free/OA url exists
+    rate_limit_seconds: 0.2
+
+  doaj:
+    enabled: true
+    max_records: 100
+    query: "*"              # DOAJ query string; "*" = everything
+    download: true          # fetch fulltext when an OA link is present
+    rate_limit_seconds: 0.5
+
+  pmc:
+    enabled: true
+    max_records: 100
+    query: "open access[filter]"
+    download: true          # PMC Open Access subset (PDF/tgz)
+    rate_limit_seconds: 0.4
+
+  biorxiv:
+    enabled: true
+    max_records: 100
+    server: biorxiv         # biorxiv or medrxiv
+    from_date: "2024-01-01"
+    to_date: "2024-12-31"
+    download: true
+    rate_limit_seconds: 1.0
+
+  crossref:
+    enabled: false          # metadata only (no fulltext); enable if you want the index
+    max_records: 100
+    query: ""
+    download: false
+    rate_limit_seconds: 0.5
+
+  # ---- Ebooks (public domain / free license) ----
+  gutenberg:
+    enabled: true
+    max_records: 100
+    languages: [en]         # [] = all languages
+    formats: [epub, txt]    # preferred order; first available is downloaded
+    download: true
+    rate_limit_seconds: 1.0
+
+  internet_archive:
+    enabled: true
+    max_records: 100
+    query: 'mediatype:texts AND (licenseurl:*publicdomain* OR possible-copyright-status:"NOT_IN_COPYRIGHT")'
+    formats: ["Text PDF", "EPUB", "DjVuTXT"]
+    download: true
+    rate_limit_seconds: 1.0
