@@ -84,6 +84,25 @@ The window has four tabs:
 
 A Light/Dark theme toggle lives under the **View** menu.
 
+### Verified running headless (Xvfb)
+
+The GUI was run on a headless Linux machine through a virtual display
+(`Xvfb :99`, real `xcb` platform and event loop — not a mock) and completed a
+real harvest of 2 arXiv PDFs and 2 Project Gutenberg ebooks. Screenshots from
+that live run:
+
+![Harvest — done](docs/screenshots/live/live-harvest-done.png)
+
+![Library — real downloads](docs/screenshots/live/live-library.png)
+
+To reproduce on a headless box:
+
+```bash
+sudo apt-get install -y xvfb
+Xvfb :99 -screen 0 1280x900x24 &
+DISPLAY=:99 QT_QPA_PLATFORM=xcb harvester-gui
+```
+
 ## Install
 
 Requires Python 3.9+.
