@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import textwrap
+from pathlib import Path
 
-from harvester.config import load_config
+from harvester.config import default_config_text, load_config, load_default_config
 
 
 def test_defaults_when_no_file():
@@ -46,3 +47,16 @@ def test_overrides_win_over_file(tmp_path):
     cfg = load_config(p, overrides={"download": False, "contact_email": "cli@x.com"})
     assert cfg.download is False
     assert cfg.contact_email == "cli@x.com"
+
+
+def test_packaged_default_matches_example_file():
+    """The bundled runtime config must not drift from the repo's example."""
+    root = Path(__file__).resolve().parents[1] / "config.example.yaml"
+    assert default_config_text() == root.read_text(encoding="utf-8")
+
+
+def test_load_default_config_has_all_sources():
+    cfg = load_default_config()
+    assert set(cfg.sources) >= {"arxiv", "openalex", "gutenberg", "internet_archive", "pmc"}
+    # crossref ships disabled by default (metadata-only)
+    assert cfg.sources["crossref"].enabled is False

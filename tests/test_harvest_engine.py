@@ -114,3 +114,41 @@ def test_download_all_fail_returns_false(tmp_path):
     http.fail_urls = {"http://x/a.pdf", "http://x/b.txt"}
     assert h._download(rec, http) is False
     h.close()
+
+
+def test_events_emitted(tmp_path):
+    cfg = _cfg(tmp_path, records=_records(3), download=False)
+    events = []
+    h = Harvester(cfg)
+    h.run(show_progress=False, on_event=events.append)
+    h.close()
+    types = [e["type"] for e in events]
+    assert types[0] == "run_start"
+    assert "source_start" in types and "source_done" in types
+    assert types[-1] == "run_done"
+    records = [e for e in events if e["type"] == "record"]
+    assert len(records) == 3
+    assert records[0]["status"] == "metadata"
+    assert records[0]["category"] == "cat"
+    run_done = [e for e in events if e["type"] == "run_done"][0]
+    assert run_done["totals"].get("metadata") == 3
+    assert run_done["stopped"] is False
+
+
+def test_should_stop_cancels_midway(tmp_path):
+    cfg = _cfg(tmp_path, records=_records(10), download=False)
+    seen = {"n": 0}
+    events = []
+
+    def on_ev(e):
+        events.append(e)
+        if e["type"] == "record":
+            seen["n"] += 1
+
+    h = Harvester(cfg)
+    h.run(show_progress=False, on_event=on_ev, should_stop=lambda: seen["n"] >= 2)
+    h.close()
+    records = [e for e in events if e["type"] == "record"]
+    assert len(records) == 2                      # stopped right after the 2nd
+    run_done = [e for e in events if e["type"] == "run_done"][0]
+    assert run_done["stopped"] is True
