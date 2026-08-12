@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Harvested content + state (never commit downloaded files / bulk catalogs / DB).
+# The tool creates data/ at runtime.
+data/
+
+# Local (per-user) config generated from config.example.yaml
+config.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/

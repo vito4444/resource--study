@@ -1,0 +1,60 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [main, "cursor/**"]
+    paths-ignore: ["**.md"]
+  pull_request:
+    paths-ignore: ["**.md"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [onefile, onedir]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[build]
+
+      - name: Run offline tests
+        if: matrix.mode == 'onefile'
+        run: |
+          pip install pytest
+          pytest -m "not live"
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+      - name: Build (${{ matrix.mode }})
+        run: pyinstaller --noconfirm --clean packaging/harvester_gui.spec
+        env:
+          RSH_ONEDIR: ${{ matrix.mode == 'onedir' && '1' || '' }}
+
+      - name: Upload single-file EXE
+        if: matrix.mode == 'onefile'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ResourceStudyHarvester-windows-onefile
+          path: dist/ResourceStudyHarvester.exe
+          if-no-files-found: error
+
+      - name: Upload one-folder build
+        if: matrix.mode == 'onedir'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ResourceStudyHarvester-windows-onedir
+          path: dist/ResourceStudyHarvester/
+          if-no-files-found: error
