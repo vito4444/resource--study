@@ -11,9 +11,9 @@ venv/
 .pytest_cache/
 .ruff_cache/
 
-# Harvested content + state (never commit downloaded files / bulk catalogs / DB)
+# Harvested content + state (never commit downloaded files / bulk catalogs / DB).
+# The tool creates data/ at runtime.
 data/
-!data/.gitkeep
 
 # Local (per-user) config generated from config.example.yaml
 config.yaml
